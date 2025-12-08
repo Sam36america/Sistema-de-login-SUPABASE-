@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdicionar identidade visual da Vora Energia nas páginas de autenticação\n\n- Adicionar logo da Vora Energia nas páginas de login e cadastro\n- Aplicar paleta de cores da marca (#00f494 e #005f46)\n- Alterar fundo para preto (#000000)\n- Atualizar título para \"Leitor faturas de gás\"\n- Melhorar transições de hover nos botões e links\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)",
+      "Bash(gh repo create:*)",
+      "Bash(echo \"# Comandos para adicionar o novo repositório remoto e fazer push:\n\ngit remote add backup https://github.com/Sam36america/sistema-de-login-OFICIAL.git\ngit push backup main\")",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(mkdir:*)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(npm run dev:*)",
+      "Bash(dir \"G:\\QUALIDADE\\Códigos\\Leitura de Faturas Gás\\Códigos\" /AD /B)",
+      "Bash(done)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -39,3 +39,23 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend-flask/venv/
+backend-flask/env/
+backend-flask/ENV/
+backend-flask/uploads/*
+!backend-flask/uploads/.gitkeep
+!backend-flask/uploads/Lidos/
+backend-flask/uploads/Lidos/*
+!backend-flask/uploads/Lidos/.gitkeep
+backend-flask/temp/*
+!backend-flask/temp/.gitkeep
+
+# Backend Flask
+backend-flask/.env
