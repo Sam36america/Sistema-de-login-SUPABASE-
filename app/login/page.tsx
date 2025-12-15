@@ -20,12 +20,29 @@ export default function LoginPage() {
     setMessage(null)
 
     try {
+      // Verificar se as credenciais do Supabase estão configuradas
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error('Configuração do Supabase não encontrada. Verifique o arquivo .env.local')
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (error) throw error
+      if (error) {
+        // Mensagens de erro mais amigáveis
+        if (error.message.includes('Invalid login credentials')) {
+          throw new Error('Email ou senha incorretos')
+        }
+        if (error.message.includes('Email not confirmed')) {
+          throw new Error('Email não confirmado. Verifique sua caixa de entrada')
+        }
+        throw error
+      }
 
       if (data.user) {
         setMessage({
@@ -36,10 +53,20 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (error: any) {
-      setMessage({
-        type: 'error',
-        text: error.message || 'Erro ao fazer login',
-      })
+      console.error('Erro de login:', error)
+
+      // Tratamento específico para erro de rede
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        setMessage({
+          type: 'error',
+          text: 'Erro de conexão. Verifique sua internet ou se o Supabase está configurado corretamente.',
+        })
+      } else {
+        setMessage({
+          type: 'error',
+          text: error.message || 'Erro ao fazer login',
+        })
+      }
     } finally {
       setLoading(false)
     }

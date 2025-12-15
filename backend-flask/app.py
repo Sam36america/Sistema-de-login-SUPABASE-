@@ -16,7 +16,16 @@ import subprocess
 from fornecedoras_config import FORNECEDORAS
 
 app = Flask(__name__)
-CORS(app)  # Permite requisições do Next.js
+# Configurar CORS para permitir requisições do Vercel e ngrok
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization", "ngrok-skip-browser-warning"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": False
+    }
+})
 
 # Configurações
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')

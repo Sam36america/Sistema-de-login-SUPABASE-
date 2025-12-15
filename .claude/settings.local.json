@@ -13,7 +13,22 @@
       "Bash(powershell -Command:*)",
       "Bash(npm run dev:*)",
       "Bash(dir \"G:\\QUALIDADE\\Códigos\\Leitura de Faturas Gás\\Códigos\" /AD /B)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git commit:*)",
+      "Bash(test:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill /F /PID 21420)",
+      "Bash(taskkill //F //PID 21420)",
+      "Bash(taskkill //F //PID 40816)",
+      "Bash(timeout /t 2 /nobreak)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(if exist .next rmdir /s /q .next)",
+      "Bash(taskkill //F //PID 2088)",
+      "Bash(set TURBOPACK=0)",
+      "Bash(del next.config.ts)"
     ],
     "deny": [],
     "ask": []
