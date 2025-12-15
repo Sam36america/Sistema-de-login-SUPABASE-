@@ -4,6 +4,8 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+import threading
+import uuid
 
 # Adicionar pasta scripts ao path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'scripts'))
@@ -14,6 +16,9 @@ from scripts.models import DatabaseConfig
 import pyodbc
 import subprocess
 from fornecedoras_config import FORNECEDORAS
+
+# Cache global para armazenar status dos processamentos
+processing_status = {}
 
 app = Flask(__name__)
 # Configurar CORS para permitir requisições do Vercel e ngrok
@@ -264,9 +269,73 @@ def listar_fornecedoras():
     except Exception as e:
         return jsonify({'error': f'Erro ao listar fornecedoras: {str(e)}'}), 500
 
+def executar_processamento(job_id, fornecedora_id, config):
+    """Executa o processamento de uma fornecedora em thread separada"""
+    try:
+        # Caminho completo do script
+        script_path = os.path.join(config['pasta_codigo'], config['script'])
+        python_exe = sys.executable
+
+        # Adicionar log inicial
+        processing_status[job_id]['logs'].append(f"🚀 Iniciando processamento de {config['nome']}...")
+        processing_status[job_id]['logs'].append(f"📁 Script: {script_path}")
+
+        # Executar processo
+        process = subprocess.Popen(
+            [python_exe, script_path],
+            cwd=config['pasta_codigo'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,  # Line buffered
+            universal_newlines=True
+        )
+
+        # Ler linha por linha em tempo real
+        for line in process.stdout:
+            line = line.strip()
+            if line:
+                processing_status[job_id]['logs'].append(line)
+
+        # Aguardar conclusão
+        return_code = process.wait(timeout=300)  # 5 min timeout
+
+        # Atualizar status final
+        if return_code == 0:
+            processing_status[job_id].update({
+                'status': 'completed',
+                'end_time': datetime.now(),
+                'error': None
+            })
+            processing_status[job_id]['logs'].append(f"✅ Processamento concluído com sucesso!")
+        else:
+            processing_status[job_id].update({
+                'status': 'error',
+                'end_time': datetime.now(),
+                'error': f'Processo retornou código de erro: {return_code}'
+            })
+            processing_status[job_id]['logs'].append(f"❌ Erro: Processo retornou código {return_code}")
+
+    except subprocess.TimeoutExpired:
+        process.kill()
+        processing_status[job_id].update({
+            'status': 'error',
+            'end_time': datetime.now(),
+            'error': 'Timeout: processamento excedeu 5 minutos'
+        })
+        processing_status[job_id]['logs'].append('❌ Erro: Timeout - processamento excedeu 5 minutos')
+
+    except Exception as e:
+        processing_status[job_id].update({
+            'status': 'error',
+            'end_time': datetime.now(),
+            'error': str(e)
+        })
+        processing_status[job_id]['logs'].append(f'❌ Erro: {str(e)}')
+
 @app.route('/api/processar-fornecedora/<fornecedora_id>', methods=['POST'])
 def processar_fornecedora(fornecedora_id):
-    """Executa o script de processamento de uma fornecedora específica"""
+    """Inicia o processamento assíncrono de uma fornecedora específica"""
     try:
         # Verificar se a fornecedora existe
         if fornecedora_id not in FORNECEDORAS:
@@ -287,53 +356,59 @@ def processar_fornecedora(fornecedora_id):
         if not os.path.exists(script_path):
             return jsonify({'error': f'Script não encontrado: {script_path}'}), 404
 
-        # Executar o script Python
-        print(f'🔄 Executando script: {script_path}')
+        # Gerar job_id único
+        job_id = str(uuid.uuid4())
 
-        # Usar o Python do ambiente virtual ou do sistema
-        python_exe = sys.executable
+        # Inicializar status no cache
+        processing_status[job_id] = {
+            'fornecedora_id': fornecedora_id,
+            'fornecedora_nome': config['nome'],
+            'status': 'processing',
+            'logs': [],
+            'start_time': datetime.now(),
+            'end_time': None,
+            'error': None
+        }
 
-        result = subprocess.run(
-            [python_exe, script_path],
-            cwd=config['pasta_codigo'],
-            capture_output=True,
-            text=True,
-            timeout=300  # 5 minutos timeout
+        # Executar processamento em thread separada
+        thread = threading.Thread(
+            target=executar_processamento,
+            args=(job_id, fornecedora_id, config)
         )
+        thread.daemon = True
+        thread.start()
 
-        # Capturar saída
-        stdout = result.stdout
-        stderr = result.stderr
-        returncode = result.returncode
-
-        if returncode == 0:
-            return jsonify({
-                'message': f'Processamento de {config["nome"]} concluído com sucesso',
-                'fornecedora': config['nome'],
-                'stdout': stdout,
-                'timestamp': datetime.now().isoformat()
-            }), 200
-        else:
-            return jsonify({
-                'error': f'Erro ao processar {config["nome"]}',
-                'fornecedora': config['nome'],
-                'stdout': stdout,
-                'stderr': stderr,
-                'returncode': returncode,
-                'timestamp': datetime.now().isoformat()
-            }), 500
-
-    except subprocess.TimeoutExpired:
+        # Retornar job_id imediatamente
         return jsonify({
-            'error': 'Timeout: O processamento demorou mais de 5 minutos',
-            'fornecedora': config['nome']
-        }), 500
+            'job_id': job_id,
+            'fornecedora': config['nome'],
+            'message': 'Processamento iniciado'
+        }), 202  # 202 Accepted
 
     except Exception as e:
         return jsonify({
             'error': f'Erro ao processar fornecedora: {str(e)}',
             'timestamp': datetime.now().isoformat()
         }), 500
+
+@app.route('/api/status-processamento/<job_id>', methods=['GET'])
+def status_processamento(job_id):
+    """Retorna o status atual e logs de um processamento"""
+    if job_id not in processing_status:
+        return jsonify({'error': 'Job não encontrado'}), 404
+
+    job = processing_status[job_id]
+
+    return jsonify({
+        'job_id': job_id,
+        'fornecedora_id': job['fornecedora_id'],
+        'fornecedora_nome': job['fornecedora_nome'],
+        'status': job['status'],
+        'logs': job['logs'],
+        'start_time': job['start_time'].isoformat(),
+        'end_time': job['end_time'].isoformat() if job['end_time'] else None,
+        'error': job['error']
+    }), 200
 
 if __name__ == '__main__':
     print('🚀 Iniciando API Flask - Vora Energia')
