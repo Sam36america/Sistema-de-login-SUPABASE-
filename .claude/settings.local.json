@@ -28,7 +28,9 @@
       "Bash(if exist .next rmdir /s /q .next)",
       "Bash(taskkill //F //PID 2088)",
       "Bash(set TURBOPACK=0)",
-      "Bash(del next.config.ts)"
+      "Bash(del next.config.ts)",
+      "Bash(git rm:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
