@@ -30,7 +30,11 @@
       "Bash(set TURBOPACK=0)",
       "Bash(del next.config.ts)",
       "Bash(git rm:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(set NEXT_PRIVATE_DEV_TURBOPACK=false)",
+      "Bash(dir \"c:\\Users\\SamueldaSilvaSantos\\sistema-de-login\")",
+      "Bash(npm config:*)"
     ],
     "deny": [],
     "ask": []
