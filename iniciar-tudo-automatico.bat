@@ -134,8 +134,17 @@ if not "!CLEAN_URL!"=="" (
 )
 echo  Frontend Local: http://localhost:3000
 echo.
-echo Aguarde ~30 segundos para o frontend iniciar...
-echo Depois acesse: http://localhost:3000
+echo Aguardando frontend iniciar (~30 segundos)...
+timeout /t 30 /nobreak > nul
+
+echo.
+echo Abrindo navegador em http://localhost:3000...
+start http://localhost:3000
+
+echo.
+echo ========================================
+echo  Navegador aberto!
+echo ========================================
 echo.
 echo Para parar tudo: Execute parar-sistema.bat
 echo.
